@@ -34,13 +34,23 @@ class Main:
         for x in range(2):
             hand_list.append(self.card_list.pop(0))
 
-        for card in hand_list:
-            if card.value == 12:
+            # Check if cut card drawn
+            if hand_list[x].rank == "Cut Card":
+
+                # reshuffle shoe
                 self.new_shoe(settings.shoe_size)
+
+                print("Cut card drawn! reshuffling shoe...")
+
+                # Get rid of cut card from current hand and draw new card
+                hand_list.pop(x)
+                hand_list.append(self.card_list.pop(0))
+
+        for card in hand_list:
             hand_value = hand_value + card.value
             print(f" {card.rank} of {card.suit}")
 
-        print(f"Hand value: {hand_value}")
+        print(f"\nHand value: {hand_value}")
 
     def new_shoe(self, decks):
 
@@ -57,8 +67,8 @@ class Main:
         # Add cut card
         self.card_list.insert(cc_loc, Card("Cut Card", "None", 12))
 
-        for card in self.card_list:
-            print(f" {card.rank} of {card.suit}, Value: {card.value}")
+        #for card in self.card_list:
+            #print(f" {card.rank} of {card.suit}, Value: {card.value}")
 
     def new_deck(self):
 
