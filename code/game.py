@@ -1,6 +1,7 @@
 import time
 from settings import *
 import setup
+from matplotlib import pyplot as plt, ticker as mticker
 
 
 class Game:
@@ -9,11 +10,16 @@ class Game:
         # Setup
         self.setup = setup.Setup()
         self.card_list = self.setup.new_shoe(shoe_size)
+
         # UI buffers
         self.dash = "------------"
         self.dash_small = "-----"
+
         # Chip number
         self.chips = starting_chips
+        self.chips_data = [self.chips]
+        self.hands_data = [0]
+
         # Current hand
         self.bet_chips = 0
         self.hand_num = 0
@@ -35,6 +41,7 @@ class Game:
 
     def new_hand(self):
 
+        # Clear data
         self.hand_list.clear()
         self.dl_hand_list.clear()
         self.hand_value = 0
@@ -42,6 +49,7 @@ class Game:
 
         # Allow for initial bet
         self.bet()
+
         # Increment hand number and start hand
         self.hand_num += 1
         print(f"{self.dash}\nHand {self.hand_num}!\n{self.dash}")
@@ -52,7 +60,7 @@ class Game:
         for i in range(2):
             self.add_card(self.hand_list)
 
-        # Reveal cards
+        # Reveal cards in hand
         for card in self.hand_list:
             time.sleep(0.5)
             self.hand_value = self.hand_value + card.value
@@ -67,6 +75,32 @@ class Game:
 
         # Begin player turn
         self.player_turn()
+
+    def dealer_draw(self):
+
+        # Start dealer draw
+        print("Dealer's draw:\n")
+        time.sleep(1)
+
+        # Add cards to dealer's hand
+        for i in range(2):
+            self.add_card(self.dl_hand_list)
+
+            # Check if cut card drawn
+            if self.dl_hand_list[i].rank == "Cut Card":
+                self.shuffle_shoe(self.dl_hand_list)
+
+        for card in self.dl_hand_list:
+            self.dl_hand_value = self.dl_hand_value + card.value
+
+        time.sleep(0.5)
+        print(f"{self.dl_hand_list[0].rank} of {self.dl_hand_list[0].suit}")
+        time.sleep(0.5)
+        print("???")
+
+        time.sleep(0.5)
+        print(f"\nHand value: {self.dl_hand_list[0].value}+\n{self.dash_small}")
+        time.sleep(0.5)
 
     def bet(self):
 
@@ -98,31 +132,7 @@ class Game:
         if list[-1].rank == "Cut Card":
             self.shuffle_shoe(list)
 
-    def dealer_draw(self):
 
-        # Start dealer draw
-        print("Dealer's draw:\n")
-        time.sleep(1)
-
-        # Add cards to dealer's hand
-        for i in range(2):
-            self.add_card(self.dl_hand_list)
-
-            # Check if cut card drawn
-            if self.dl_hand_list[i].rank == "Cut Card":
-                self.shuffle_shoe(self.dl_hand_list)
-
-        for card in self.dl_hand_list:
-            self.dl_hand_value = self.dl_hand_value + card.value
-
-        time.sleep(0.5)
-        print(f"{self.dl_hand_list[0].rank} of {self.dl_hand_list[0].suit}")
-        time.sleep(0.5)
-        print("???")
-
-        time.sleep(0.5)
-        print(f"\nHand value: {self.dl_hand_list[0].value}+\n{self.dash_small}")
-        time.sleep(0.5)
 
     def shuffle_shoe(self, player):
 
@@ -151,17 +161,9 @@ class Game:
                     self.player_turn()
             except ValueError:
                 print("Unexpected input received")
-        if self.hand_value == 21:
-            self.chips = self.chips + int(self.bet_chips * dealer_pay_rate)
-            print(f"You got 21!\nPayout: {int(self.bet_chips * dealer_pay_rate)}")
-            print(f"Chips: {self.chips}")
-            self.next_hand()
-        elif self.hand_value > 21:
-            self.chips = self.chips - self.bet_chips
-            print(f"You busted")
-            print(f"You lost {self.bet_chips} chips")
-            print(f"Chips: {self.chips}")
-            self.next_hand()
+
+
+        self.dealer_turn()
 
     def dealer_turn(self):
         print(f"{self.dash_small}\nDealer's turn")
@@ -184,18 +186,26 @@ class Game:
             print(f"{new_rank} of {new_suit}")
             print(f"Hand value: {self.dl_hand_value}")
 
-
         self.check_win()
 
     def check_win(self):
 
-        if self.hand_value < 22:
-            if self.hand_value > self.dl_hand_value:
-                self.payout("Player")
-        else:
-            self.payout("Dealer")
+        if self.dl_hand_value <= 21:
+            if self.hand_value <= 21:
+                if self.hand_value > self.dl_hand_value:
+                    self.payout("Player")
+                elif self.hand_value == self.dl_hand_value:
+                    self.payout("Draw")
+                elif self.hand_value < self.dl_hand_value:
+                    self.payout("Dealer")
+        elif self.dl_hand_value > 21:
+            self.payout("Player")
+
 
     def payout(self, win):
+
+        print("Called")
+        time.sleep(1)
 
         if win == "Player":
             self.chips = self.chips + (self.bet_chips * dealer_pay_rate)
@@ -203,9 +213,20 @@ class Game:
             print(f"Payout: {int(self.bet_chips * dealer_pay_rate)}")
             print(f"Chips: {self.chips}\n")
 
+        if win == "Draw":
+            print("Draw!")
+            print("No chips exchanged")
+            print(f"Chips: {self.chips}\n")
+
         if win == "Dealer":
             self.chips = self.chips - self.bet_chips
+            print("You lose!")
+            print(f"Loss: {int(self.chips - self.bet_chips)}")
+            print(f"Chips: {self.chips}\n")
 
+        # add data to lists
+        self.chips_data.append(int(self.chips))
+        self.hands_data.append(int(self.hand_num))
         self.next_hand()
 
     def next_hand(self):
@@ -214,16 +235,15 @@ class Game:
             play_again = str(input("Play another hand? (y/n): ")).lower()
             if play_again == "y":
                 self.new_hand()
-            elif play_again == "n":
+            if play_again == "n":
                 self.game_over()
             else:
                 print("please enter either y or n")
                 self.next_hand()
         except ValueError:
             print("Unexpected input received")
-
-
-
+            self.game_over()
+            self.next_hand()
 
     def hit(self):
 
@@ -243,4 +263,13 @@ class Game:
         self.dealer_turn()
 
     def game_over(self):
-        print("game over")
+        plt.plot(self.hands_data, self.chips_data)
+
+        plt.title("Chips over rounds")
+
+        plt.xlabel("Rounds")
+        plt.ylabel("Chips")
+
+        plt.xticks(range(1,len(self.hands_data)))
+
+        plt.show()
