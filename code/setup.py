@@ -30,9 +30,9 @@ class Setup:
         self.card_list.insert(cc_loc, Card("Cut Card", "None", 12))
 
         # For testing purposes
-        for card in self.card_list:
-           print(f" {card.rank} of {card.suit}, Value: {card.value}")
-        print("\n\n\n\n")
+        #for card in self.card_list:
+        #   print(f" {card.rank} of {card.suit}, Value: {card.value}")
+        #print("\n\n\n\n")
 
         # Return to game
         return self.card_list
